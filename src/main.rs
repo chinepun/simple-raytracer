@@ -1,5 +1,9 @@
-use std::ops::Div;
-use std::io::{stdout, Write};
+pub mod vec3;
+pub mod color;
+
+use crate::color::*;
+
+use std::{io::{stdout, Write}, ops::Div};
 fn main() 
 {
     const IMAGE_HEIGHT: usize = 256;
@@ -23,12 +27,13 @@ fn main()
                 .div((IMAGE_HEIGHT - 1) as f32);
             let b = 0.25;
 
-            let ir = (255.999 * r) as i32;
-            let ig = (255.999 * g) as i32;
-            let ib = (255.999 * b) as i32;
+            let pixel_color: color::Color = color::Color::new_with_values(
+                r,
+                g,
+                b
+            );
 
-            // println!("{} {} {} \n", ir, ig, ib);
-            println!("{} {} {}", ir, ig, ib);
+            write_color(&pixel_color);
         }
     }
 }
