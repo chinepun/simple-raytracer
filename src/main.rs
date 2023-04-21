@@ -3,8 +3,9 @@ pub mod color;
 pub mod ray;
 pub mod sphere;
 pub mod hit;
+pub mod camera;
 
-
+use camera::Camera;
 use crate::vec3::*;
 use crate::color::*;
 use hit::{Hit, World};
@@ -54,6 +55,7 @@ fn ray_color(r: &Ray, world: &World) -> Color
     // t * Color::new_with_values(0.5, 0.7, 1.0)
 }
 
+use std::io::stderr;
 use std::{io::{stdout, Write}, ops::Div};
 fn main() 
 {
@@ -61,12 +63,14 @@ fn main()
     const ASPECT_RATIO: f32 = 16.0 / 9.0;
     const IMAGE_WIDTH: usize = 400;
     const IMAGE_HEIGHT: usize = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as usize;
+    const SAMPLES_PER_PIXEL:u64 = 100;
 
     // World
     let mut world = World::default();
     world.push(Sphere::new(point3::new_with_values(0.0, 0.0, -1.0), 0.5));
     world.push(Sphere::new(point3::new_with_values(0.0, -100.5, -1.0), 100.0));
     // Camera
+    let cam = Camera::new();
     let viewport_height = 2.0;
     let viewport_width = ASPECT_RATIO * viewport_height;
     let focal_length = 1.0;
@@ -80,24 +84,28 @@ fn main()
     let columns = [0; IMAGE_WIDTH];
 
     // Render
+    let mut rng = rand::thread_rng();
 
     println!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT);
 
     for (j, _) in rows.iter().enumerate()
     {
-        if let Err(_) = stdout().flush() {
-            eprintln!("\rScanlines remaining: {}", j)
-        };
+        eprint!("\rScanlines remaining: {:3}", IMAGE_HEIGHT - j - 1);
+        stderr().flush().unwrap();        
         for (i, _) in columns.iter().enumerate()
         {
-            let u = (i as f32)
-                .div((IMAGE_WIDTH - 1) as f32);
-            let v = (j as f32)
-                .div((IMAGE_HEIGHT - 1) as f32);
+            let mut pixel_color = Color::new();
+            for _ in 0..SAMPLES_PER_PIXEL 
+            {
+                let u = (i as f32)
+                    .div((IMAGE_WIDTH - 1) as f32);
+                let v = (j as f32)
+                    .div((IMAGE_HEIGHT - 1) as f32);
 
-            let r = Ray::new(origin, lower_left_corner + u * horizontal + v * vertical - origin);
-            let pixel_color: Color = ray_color(&r, &world);
-            write_color(&pixel_color);
+                let r = cam.get_ray(u, v);
+                pixel_color = pixel_color + ray_color(&r, &world);
+            }
+            println!("{}", pixel_color.write_color(SAMPLES_PER_PIXEL));
         }
     }
 }
